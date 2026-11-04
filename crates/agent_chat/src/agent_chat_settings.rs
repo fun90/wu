@@ -1,7 +1,8 @@
 use agent_harness::{PermissionMode, ReasoningLevel};
 use settings::{
     AgentChatDefaultEffort, AgentChatWhileWorking, ClaudeCodePermissionDefault,
-    CodexPermissionDefault, ContextTokens, DockSide, OpencodePermissionDefault, RegisterSetting,
+    CodexPermissionDefault, ContextTokens, DockSide, OpencodePermissionDefault, PiPermissionDefault,
+    RegisterSetting,
     Settings,
 };
 pub use settings::{AgentChatModelPickerLayout, AgentChatSendKey};
@@ -23,7 +24,7 @@ pub struct AgentChatSettings {
     pub notify_only_in_background: bool,
     pub auto_compact_tokens: Option<u64>,
     pub default_effort: Option<ReasoningLevel>,
-    default_permissions: [(AgentKind, PermissionMode); 3],
+    default_permissions: [(AgentKind, PermissionMode); 4],
     agents: Vec<AgentKind>,
     pub steer_while_working: bool,
     pub confirm_quit_while_working: bool,
@@ -52,6 +53,7 @@ impl Settings for AgentChatSettings {
             (AgentKind::Claude, shown.claude_code),
             (AgentKind::Codex, shown.codex),
             (AgentKind::Opencode, shown.opencode),
+            (AgentKind::Pi, shown.pi),
         ]
         .into_iter()
         .filter(|(_, shown)| shown.unwrap_or(true))
@@ -92,6 +94,10 @@ impl Settings for AgentChatSettings {
                     AgentKind::Opencode,
                     opencode_permission(permission.opencode.unwrap_or_default()),
                 ),
+                (
+                    AgentKind::Pi,
+                    pi_permission(permission.pi.unwrap_or_default()),
+                ),
             ],
             agents,
             steer_while_working: content.while_working.unwrap_or_default()
@@ -130,6 +136,13 @@ fn codex_permission(mode: CodexPermissionDefault) -> PermissionMode {
         CodexPermissionDefault::Auto => PermissionMode::Auto,
         CodexPermissionDefault::ApproveForMe => PermissionMode::ApproveForMe,
         CodexPermissionDefault::FullAccess => PermissionMode::FullAccess,
+    }
+}
+
+fn pi_permission(mode: PiPermissionDefault) -> PermissionMode {
+    match mode {
+        PiPermissionDefault::Auto => PermissionMode::Auto,
+        PiPermissionDefault::ReadOnly => PermissionMode::ReadOnly,
     }
 }
 

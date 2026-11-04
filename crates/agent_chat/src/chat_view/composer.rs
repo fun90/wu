@@ -92,7 +92,9 @@ impl ChatView {
             colors.text_muted.opacity(0.7)
         };
         let brand = match kind {
-            AgentKind::Codex | AgentKind::Opencode => agent_icon(kind).color(Color::Muted),
+            AgentKind::Codex | AgentKind::Opencode | AgentKind::Pi => {
+                agent_icon(kind).color(Color::Muted)
+            }
             AgentKind::Claude => agent_icon(kind),
         }
         .size(icon_size_px(16., window));

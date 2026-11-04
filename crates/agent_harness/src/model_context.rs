@@ -24,6 +24,14 @@ pub(crate) fn context(
             vec![root.join("settings.json"), root.join(".credentials.json")]
         }
         HarnessId::Opencode => opencode_files(&home),
+        HarnessId::Pi => {
+            let root = root("PI_CODING_AGENT_DIR", home.join(".pi").join("agent"));
+            vec![
+                root.join("auth.json"),
+                root.join("settings.json"),
+                root.join("models.json"),
+            ]
+        }
     };
     let binary = binary
         .canonicalize()
@@ -51,6 +59,7 @@ pub(crate) fn context(
         HarnessId::Codex => &["CODEX_", "OPENAI_"],
         HarnessId::ClaudeCode => &["CLAUDE_", "ANTHROPIC_", "AWS_"],
         HarnessId::Opencode => &["OPENCODE_", "OPENAI_", "ANTHROPIC_", "GOOGLE_"],
+        HarnessId::Pi => &["PI_", "OPENAI_", "ANTHROPIC_", "GOOGLE_"],
     };
     let mut env: Vec<_> = std::env::vars_os()
         .filter(|(key, _)| {

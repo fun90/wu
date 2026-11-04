@@ -6,6 +6,7 @@ pub enum HarnessId {
     ClaudeCode,
     Codex,
     Opencode,
+    Pi,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -62,6 +63,8 @@ impl PermissionMode {
                 Self::FullAccess,
             ],
             HarnessId::Opencode => &[Self::Ask, Self::AcceptEdits, Self::Auto, Self::FullAccess],
+            // Pi has no prompts or sandbox: read-only withholds the writing tools instead.
+            HarnessId::Pi => &[Self::ReadOnly, Self::Auto],
         }
     }
 

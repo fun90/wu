@@ -7651,7 +7651,7 @@ fn agent_chat_page() -> SettingsPage {
         ]
     }
 
-    fn new_chats_section() -> [SettingsPageItem; 5] {
+    fn new_chats_section() -> [SettingsPageItem; 6] {
         [
             SettingsPageItem::SectionHeader(n!("New Chats")),
             SettingsPageItem::SettingItem(SettingItem {
@@ -7774,10 +7774,41 @@ fn agent_chat_page() -> SettingsPage {
                 })),
                 files: USER,
             }),
+            SettingsPageItem::SettingItem(SettingItem {
+                title: n!("Pi Permission"),
+                description: n!(
+                    "The permission mode new Pi chats start with. You can still change it in each chat."
+                ),
+                field: Box::new(SettingField {
+                    json_path: Some("agent_chat.default_permission.pi"),
+                    pick: |settings_content| {
+                        settings_content
+                            .agent_chat
+                            .as_ref()?
+                            .default_permission
+                            .as_ref()?
+                            .pi
+                            .as_ref()
+                    },
+                    write: |settings_content, value, _| {
+                        settings_content
+                            .agent_chat
+                            .get_or_insert_default()
+                            .default_permission
+                            .get_or_insert_default()
+                            .pi = value;
+                    },
+                }),
+                metadata: Some(Box::new(SettingsFieldMetadata {
+                    should_do_titlecase: Some(false),
+                    ..Default::default()
+                })),
+                files: USER,
+            }),
         ]
     }
 
-    fn agents_section() -> [SettingsPageItem; 5] {
+    fn agents_section() -> [SettingsPageItem; 6] {
         [
             SettingsPageItem::SectionHeader(n!("Agents")),
             SettingsPageItem::SettingItem(SettingItem {
@@ -7891,6 +7922,35 @@ fn agent_chat_page() -> SettingsPage {
                 metadata: None,
                 files: USER,
             }),
+            SettingsPageItem::SettingItem(SettingItem {
+                title: n!("Pi"),
+                description: n!(
+                    "Show Pi in the new chat menu and in Continue Saved Chat. At least one agent stays shown."
+                ),
+                field: Box::new(SettingField {
+                    json_path: Some("agent_chat.agents.pi"),
+                    pick: |settings_content| {
+                        settings_content
+                            .agent_chat
+                            .as_ref()?
+                            .agents
+                            .as_ref()?
+                            .pi
+                            .as_ref()
+                    },
+                    write: |settings_content, value, _| {
+                        let agents = settings_content
+                            .agent_chat
+                            .get_or_insert_default()
+                            .agents
+                            .get_or_insert_default();
+                        agents.pi = value;
+                        keep_one_agent_shown(agents, |agents| &mut agents.pi);
+                    },
+                }),
+                metadata: None,
+                files: USER,
+            }),
         ]
     }
 
@@ -7992,7 +8052,7 @@ fn keep_one_agent_shown(
     agents: &mut settings::AgentChatAgentsContent,
     changed: fn(&mut settings::AgentChatAgentsContent) -> &mut Option<bool>,
 ) {
-    let all_hidden = [agents.claude_code, agents.codex, agents.opencode]
+    let all_hidden = [agents.claude_code, agents.codex, agents.opencode, agents.pi]
         .iter()
         .all(|shown| *shown == Some(false));
     if all_hidden {
@@ -9888,6 +9948,7 @@ mod tests {
             claude_code: Some(false),
             codex: Some(false),
             opencode: None,
+            pi: Some(false),
         };
         keep_one_agent_shown(&mut agents, |agents| &mut agents.opencode);
         assert_eq!(agents.opencode, None);

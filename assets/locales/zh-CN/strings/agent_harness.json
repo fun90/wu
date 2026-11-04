@@ -113,6 +113,8 @@
   "Question": "问题",
   "Read": "读取",
   "Read only": "只读",
+  "Only read, search and list tools": "仅可使用读取、搜索和列目录工具",
+  "Pi never asks for permission": "Pi 不会请求权限",
   "Read {path}?": "要读取 {path} 吗？",
   "Reads files, asks before changing anything": "可以读取文件，更改任何内容前先询问",
   "Resume agent": "恢复智能体",

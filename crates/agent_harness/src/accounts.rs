@@ -38,17 +38,32 @@ pub struct Account {
 const OPENCODE_NO_ACCOUNTS: &str = i18n::n!(
     "OpenCode manages its own provider logins (`opencode auth login`); Wu can't switch them"
 );
+const PI_NO_ACCOUNTS: &str =
+    i18n::n!("Pi manages its own provider logins (`pi auth`); Wu can't switch them");
+
+fn self_managed(harness: HarnessId) -> bool {
+    matches!(harness, HarnessId::Opencode | HarnessId::Pi)
+}
+
+fn no_accounts(harness: HarnessId) -> String {
+    let message = if harness == HarnessId::Pi {
+        PI_NO_ACCOUNTS
+    } else {
+        OPENCODE_NO_ACCOUNTS
+    };
+    i18n::translate(message).to_string()
+}
 
 pub async fn list(harness: HarnessId, data_dir: &Path) -> Result<Vec<Account>, String> {
-    if harness == HarnessId::Opencode {
+    if self_managed(harness) {
         return Ok(Vec::new());
     }
     Stores::detect(data_dir)?.list(harness).await
 }
 
 pub async fn activate(harness: HarnessId, account_id: &str, data_dir: &Path) -> Result<(), String> {
-    if harness == HarnessId::Opencode {
-        return Err(i18n::translate(OPENCODE_NO_ACCOUNTS).to_string());
+    if self_managed(harness) {
+        return Err(no_accounts(harness));
     }
     Stores::detect(data_dir)?
         .activate(harness, account_id)
@@ -60,8 +75,8 @@ pub async fn usage_request(
     account_id: &str,
     data_dir: &Path,
 ) -> Result<UsageRequest, String> {
-    if harness == HarnessId::Opencode {
-        return Err(i18n::translate(crate::usage::OPENCODE_NO_USAGE).to_string());
+    if self_managed(harness) {
+        return Err(i18n::translate(crate::usage::NO_PLAN_USAGE).to_string());
     }
     Stores::detect(data_dir)?
         .usage_request(harness, account_id)
@@ -69,8 +84,8 @@ pub async fn usage_request(
 }
 
 pub async fn remove(harness: HarnessId, account_id: &str, data_dir: &Path) -> Result<(), String> {
-    if harness == HarnessId::Opencode {
-        return Err(i18n::translate(OPENCODE_NO_ACCOUNTS).to_string());
+    if self_managed(harness) {
+        return Err(no_accounts(harness));
     }
     Stores::detect(data_dir)?.remove(harness, account_id).await
 }
@@ -277,7 +292,7 @@ impl Stores {
         match harness {
             HarnessId::ClaudeCode => self.activate_claude(&slot).await,
             HarnessId::Codex => self.activate_codex(&slot),
-            HarnessId::Opencode => Err(i18n::translate(OPENCODE_NO_ACCOUNTS).to_string()),
+            HarnessId::Opencode | HarnessId::Pi => Err(no_accounts(harness)),
         }
     }
 
@@ -354,7 +369,7 @@ impl Stores {
         let live_key = match harness {
             HarnessId::ClaudeCode => self.claude_identity().map(|identity| identity.0),
             HarnessId::Codex => self.detect_codex().map(|live| live.account_key),
-            HarnessId::Opencode => None,
+            HarnessId::Opencode | HarnessId::Pi => None,
         };
         if live_key.is_some_and(|key| slot_id_for(harness, &key) == account_id)
             && let Some(Detected {
@@ -369,8 +384,8 @@ impl Stores {
         match harness {
             HarnessId::ClaudeCode => claude_usage_request(&slot.credentials),
             HarnessId::Codex => codex_usage_request(&slot.credentials),
-            HarnessId::Opencode => {
-                Err(i18n::translate(crate::usage::OPENCODE_NO_USAGE).to_string())
+            HarnessId::Opencode | HarnessId::Pi => {
+                Err(i18n::translate(crate::usage::NO_PLAN_USAGE).to_string())
             }
         }
     }
@@ -392,7 +407,7 @@ impl Stores {
         let live = match harness {
             HarnessId::ClaudeCode => self.detect_claude().await,
             HarnessId::Codex => self.detect_codex(),
-            HarnessId::Opencode => None,
+            HarnessId::Opencode | HarnessId::Pi => None,
         };
         if let Some(live) = &live
             && let Ok(Some(credentials)) = &live.credentials
@@ -561,6 +576,7 @@ fn harness_slug(harness: HarnessId) -> &'static str {
         HarnessId::ClaudeCode => "claude-code",
         HarnessId::Codex => "codex",
         HarnessId::Opencode => "opencode",
+        HarnessId::Pi => "pi",
     }
 }
 

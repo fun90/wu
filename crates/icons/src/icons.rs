@@ -11,6 +11,7 @@ pub enum IconName {
     AgentClaude,
     AgentCodex,
     AgentOpencode,
+    AgentPi,
     AgentFast,
     AgentFastFilled,
     AgentArrowDown,

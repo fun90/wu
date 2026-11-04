@@ -1,6 +1,6 @@
 use crate::{
     AgentChatSettings, AgentKind, ContinueSavedChat, NewClaudeChat, NewCodexChat, NewOpencodeChat,
-    ToggleFocus,
+    NewPiChat, ToggleFocus,
     chat_style::{accent, ink, selected_row, text_faint, ui, wash},
     chat_view::ChatView,
     session::{AgentSession, AgentStore, ChatListPrefs, ChatOutcome, SessionSummary},
@@ -77,6 +77,11 @@ pub fn init(cx: &mut App) {
             .register_action(|workspace, _: &NewOpencodeChat, window, cx| {
                 if agent_chat_enabled(cx) {
                     new_chat(workspace, AgentKind::Opencode, window, cx);
+                }
+            })
+            .register_action(|workspace, _: &NewPiChat, window, cx| {
+                if agent_chat_enabled(cx) {
+                    new_chat(workspace, AgentKind::Pi, window, cx);
                 }
             })
             .register_action(|workspace, _: &ContinueSavedChat, window, cx| {
@@ -862,10 +867,11 @@ impl AgentPanel {
             AgentKind::Claude => IconName::AgentClaude,
             AgentKind::Codex => IconName::AgentCodex,
             AgentKind::Opencode => IconName::AgentOpencode,
+            AgentKind::Pi => IconName::AgentPi,
         };
         let harness_tint: Option<Hsla> = match session.kind {
             AgentKind::Claude => Some(rgb(CLAUDE_BRAND).into()),
-            AgentKind::Codex | AgentKind::Opencode => None,
+            AgentKind::Codex | AgentKind::Opencode | AgentKind::Pi => None,
         };
         let title_content = match renaming {
             Some(field) => self.rename_field(&field.editor, cx),
@@ -1663,6 +1669,7 @@ fn new_chat_action(kind: AgentKind) -> Box<dyn Action> {
         AgentKind::Claude => Box::new(NewClaudeChat),
         AgentKind::Codex => Box::new(NewCodexChat),
         AgentKind::Opencode => Box::new(NewOpencodeChat),
+        AgentKind::Pi => Box::new(NewPiChat),
     }
 }
 

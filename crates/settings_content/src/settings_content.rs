@@ -1126,6 +1126,8 @@ pub struct AgentChatDefaultPermissionContent {
     pub codex: Option<CodexPermissionDefault>,
     /// Default: "auto"
     pub opencode: Option<OpencodePermissionDefault>,
+    /// Default: "auto"
+    pub pi: Option<PiPermissionDefault>,
 }
 
 #[with_fallible_options]
@@ -1137,6 +1139,8 @@ pub struct AgentChatAgentsContent {
     pub codex: Option<bool>,
     /// Default: true
     pub opencode: Option<bool>,
+    /// Default: true
+    pub pi: Option<bool>,
 }
 
 #[with_fallible_options]
@@ -1218,6 +1222,28 @@ pub enum CodexPermissionDefault {
     ApproveForMe,
     #[strum(serialize = "Full Access")]
     FullAccess,
+}
+
+#[with_fallible_options]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+    MergeFrom,
+    Default,
+    PartialEq,
+    strum::VariantArray,
+    strum::VariantNames,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum PiPermissionDefault {
+    #[default]
+    Auto,
+    #[strum(serialize = "Read Only")]
+    ReadOnly,
 }
 
 #[with_fallible_options]

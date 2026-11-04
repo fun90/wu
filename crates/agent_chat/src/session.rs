@@ -1,6 +1,7 @@
 use agent_harness::{
     AgentEvent, CancellationToken, ClaudeHarness, CodexHarness, DoneStatus, ExternalSession,
-    Harness, HarnessId, Model, OpencodeHarness, PermissionMode, ReasoningLevel, RunControls,
+    Harness, HarnessId, Model, OpencodeHarness, PermissionMode, PiHarness, ReasoningLevel,
+    RunControls,
     RunRequest, SkillRef, SlashCommand, SteerMessage, ToolCall, UserInputAnswer, UserInputQuestion,
     usage::PlanUsage,
 };
@@ -167,6 +168,7 @@ impl AgentKind {
             AgentKind::Claude => HarnessId::ClaudeCode,
             AgentKind::Codex => HarnessId::Codex,
             AgentKind::Opencode => HarnessId::Opencode,
+            AgentKind::Pi => HarnessId::Pi,
         }
     }
 
@@ -175,6 +177,7 @@ impl AgentKind {
             AgentKind::Claude => Arc::new(ClaudeHarness::new()),
             AgentKind::Codex => Arc::new(CodexHarness::new()),
             AgentKind::Opencode => Arc::new(OpencodeHarness::new()),
+            AgentKind::Pi => Arc::new(PiHarness::new()),
         }
     }
 }
@@ -2772,6 +2775,18 @@ impl AgentStore {
             }
         });
         self.skills.entry(key).or_default()._task = Some(task);
+    }
+
+    pub fn reload_catalogs(&mut self, kind: AgentKind, cwd: PathBuf, cx: &mut Context<Self>) {
+        let key = (kind, cwd.clone());
+        if let Some(catalog) = self.skills.get_mut(&key) {
+            catalog.fetched_at = None;
+        }
+        if let Some(catalog) = self.commands.get_mut(&key) {
+            catalog.fetched_at = None;
+        }
+        self.refresh_skills(kind, cwd.clone(), cx);
+        self.refresh_commands(kind, cwd, cx);
     }
 
     pub fn commands(&self, kind: AgentKind, cwd: &Path) -> Option<&CommandCatalog> {

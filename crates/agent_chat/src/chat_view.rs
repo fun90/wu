@@ -646,6 +646,18 @@ impl ChatView {
         }
         self.composer
             .update(cx, |editor, cx| editor.clear(window, cx));
+        if self.session.read(cx).kind() == crate::AgentKind::Pi
+            && agent_harness::leading_command(&text) == Some(("reload", ""))
+        {
+            // Every pi run is a fresh process that rereads resources; only the cached menus go stale.
+            let (kind, cwd) = {
+                let session = self.session.read(cx);
+                (session.kind(), session.metadata().cwd.clone())
+            };
+            self.store
+                .update(cx, |store, cx| store.reload_catalogs(kind, cwd, cx));
+            return;
+        }
         if self.attachments.is_empty()
             && self.editing_queued.is_none()
             && let Some(command) = app_command_for_text(&text, &self.command_items(cx))

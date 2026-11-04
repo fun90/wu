@@ -274,7 +274,9 @@ pub fn permission_label(mode: crate::PermissionMode, harness: crate::HarnessId) 
         PermissionMode::ApproveForMe => t!("Approve for me"),
         PermissionMode::FullAccess => match harness {
             crate::HarnessId::ClaudeCode => t!("Bypass"),
-            crate::HarnessId::Codex | crate::HarnessId::Opencode => t!("Full access"),
+            crate::HarnessId::Codex | crate::HarnessId::Opencode | crate::HarnessId::Pi => {
+                t!("Full access")
+            }
         },
     }
 }
@@ -296,12 +298,16 @@ pub fn permission_description(
         (PermissionMode::Auto, HarnessId::Opencode) => {
             t!("Follows your OpenCode permission settings")
         }
+        (PermissionMode::Auto, HarnessId::Pi) => t!("Pi never asks for permission"),
         (PermissionMode::DontAsk, _) => t!("Never asks, denies anything not already allowed"),
+        (PermissionMode::ReadOnly, HarnessId::Pi) => t!("Only read, search and list tools"),
         (PermissionMode::ReadOnly, _) => t!("Reads files, asks before changing anything"),
         (PermissionMode::ApproveForMe, _) => t!("An automatic reviewer answers approval requests"),
         (PermissionMode::FullAccess, HarnessId::ClaudeCode) => t!("Skips every permission check"),
         (PermissionMode::FullAccess, HarnessId::Codex) => t!("No sandbox and no approval requests"),
-        (PermissionMode::FullAccess, HarnessId::Opencode) => t!("Never asks for permission"),
+        (PermissionMode::FullAccess, HarnessId::Opencode | HarnessId::Pi) => {
+            t!("Never asks for permission")
+        }
     }
 }
 
