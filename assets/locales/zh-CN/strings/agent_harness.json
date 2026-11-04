@@ -106,6 +106,7 @@
   "OpenCode couldn't forget your earlier message, so it may still see it. {error}": "OpenCode 无法忘记你之前的消息，所以它可能仍然能看到这条消息。{error}",
   "OpenCode doesn't report plan usage": "OpenCode 不提供套餐用量",
   "OpenCode isn't installed. Install it and try again.": "未安装 OpenCode。请安装后重试。",
+  "Pi isn't installed. Install it and try again.": "未安装 Pi。请安装后重试。",
   "OpenCode manages its own provider logins (`opencode auth login`); Wu can't switch them": "OpenCode 自行管理提供商登录（`opencode auth login`），Wu 无法切换",
   "OpenCode wants permission to continue. Allow it?": "OpenCode 需要权限才能继续。要允许吗？",
   "Patch": "补丁",

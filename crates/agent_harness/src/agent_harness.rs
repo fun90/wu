@@ -30,6 +30,7 @@ fn missing_agent_message(agent: HarnessId) -> i18n::SharedString {
             "Codex isn't installed. Install it, or use OpenCode to connect your own API or a local model."
         ),
         HarnessId::Opencode => i18n::t!("OpenCode isn't installed. Install it and try again."),
+        HarnessId::Pi => i18n::t!("Pi isn't installed. Install it and try again."),
     }
 }
 
