@@ -148,7 +148,17 @@ impl Harness for PiHarness {
                 is_skill: false,
             },
         ];
-        commands.extend(commands_from_wire(&self.get_commands(cwd).await?));
+        let data = self.get_commands(cwd).await?;
+        commands.extend(commands_from_wire(&data));
+        // Pi expands a leading `/skill:<name>` itself, so skills are also valid slash commands.
+        commands.extend(wire_commands(&data, true).filter_map(|command| {
+            Some(SlashCommand {
+                name: command["name"].as_str()?.to_owned(),
+                description: command["description"].as_str().unwrap_or_default().to_owned(),
+                input_hint: None,
+                is_skill: true,
+            })
+        }));
         Ok(commands)
     }
 
@@ -233,7 +243,7 @@ fn skills_from_wire(data: &Value) -> Vec<Skill> {
             Some(Skill {
                 name: name.strip_prefix("skill:").unwrap_or(name).to_owned(),
                 description: command["description"].as_str().unwrap_or_default().to_owned(),
-                path: command["path"].as_str().map(str::to_owned),
+                path: command["sourceInfo"]["path"].as_str().map(str::to_owned),
                 enabled: true,
             })
         })
@@ -825,6 +835,23 @@ mod tests {
             .flat_map(|record| translate(record, &mut users, &mut window, &mut error))
             .collect();
         (events, users, error)
+    }
+
+    #[test]
+    fn skills_use_source_path_and_prompt_is_expanded() {
+        let data = json!({"commands": [
+            {"name": "skill:demo", "description": "d", "source": "skill", "sourceInfo": {"path": "/s/demo/SKILL.md"}},
+            {"name": "mcp", "description": "m", "source": "extension", "sourceInfo": {"path": "/e.ts"}},
+        ]});
+        let skills = skills_from_wire(&data);
+        assert_eq!(skills.len(), 1);
+        assert_eq!(skills[0].name, "demo");
+        assert_eq!(skills[0].path.as_deref(), Some("/s/demo/SKILL.md"));
+        assert_eq!(commands_from_wire(&data).len(), 1);
+
+        let reference = SkillRef { name: "demo".into(), path: "/s/demo/SKILL.md".into() };
+        assert_eq!(skill_prompt("$demo fix it", std::slice::from_ref(&reference)), "/skill:demo fix it");
+        assert!(skill_prompt("use $demo", &[reference]).contains("/s/demo/SKILL.md"));
     }
 
     #[test]
