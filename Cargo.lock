@@ -4391,6 +4391,7 @@ dependencies = [
 name = "git_ui"
 version = "0.1.0"
 dependencies = [
+ "agent_chat",
  "anyhow",
  "askpass",
  "async-channel 2.5.0",
@@ -15724,7 +15725,7 @@ checksum = "3ad82d2a33cdc9674dc7465672f271e096168fcdbe0f799d9e6db8c5892679dc"
 
 [[package]]
 name = "wu"
-version = "1.1.16"
+version = "1.1.17"
 dependencies = [
  "activity_indicator",
  "agent_chat",

@@ -644,6 +644,20 @@ struct QueuedSteer {
     attachments: Vec<String>,
 }
 
+async fn finish(
+    server: &mut Server,
+    ephemeral_session: Option<&str>,
+    dir: Option<&str>,
+    kill_grace: Duration,
+) {
+    if let Some(session_id) = ephemeral_session
+        && let Err(error) = server.delete_session(session_id, dir).await
+    {
+        log::warn!("couldn't delete opencode session {session_id}: {error}");
+    }
+    server.shutdown(kill_grace).await;
+}
+
 fn utf8_directory(cwd: &Path) -> Result<Option<&str>, HarnessError> {
     if cwd.as_os_str().is_empty() {
         return Ok(None);
@@ -831,6 +845,7 @@ async fn run_session(session: Session) {
         }
     };
 
+    let created_session = std::sync::OnceLock::<String>::new();
     let setup = async {
         let protocol = server.protocol().await;
         let forced = forced_asks(permission);
@@ -916,7 +931,9 @@ async fn run_session(session: Session) {
             }
             None => {
                 let create_rules = rules.as_deref().filter(|_| !forced.is_empty());
-                create_session(&server, dir, agent, create_rules).await?
+                let id = create_session(&server, dir, agent, create_rules).await?;
+                created_session.get_or_init(|| id.clone());
+                id
             }
         };
         let providers = match server.provider_catalog(dir).await {
@@ -951,7 +968,8 @@ async fn run_session(session: Session) {
                     error: Some(error.to_string()),
                     session_id: None,
                 }).await;
-                server.shutdown(kill_grace).await;
+                let ephemeral_session = created_session.get().filter(|_| request.ephemeral);
+                finish(&mut server, ephemeral_session.map(String::as_str), dir, kill_grace).await;
                 return;
             }
         },
@@ -963,7 +981,8 @@ async fn run_session(session: Session) {
                 error: None,
                 session_id: None,
             }).await;
-            server.shutdown(kill_grace).await;
+            let ephemeral_session = created_session.get().filter(|_| request.ephemeral);
+            finish(&mut server, ephemeral_session.map(String::as_str), dir, kill_grace).await;
             return;
         }
     };
@@ -993,12 +1012,24 @@ async fn run_session(session: Session) {
     )
     .await
     {
-        server.shutdown(kill_grace).await;
+        finish(
+            &mut server,
+            request.ephemeral.then_some(session_id.as_str()),
+            dir,
+            kill_grace,
+        )
+        .await;
         return;
     }
     for message in rules_warning.into_iter().chain(drop_problem) {
         if !send(&event_tx, AgentEvent::Error { message }).await {
-            server.shutdown(kill_grace).await;
+            finish(
+                &mut server,
+                request.ephemeral.then_some(session_id.as_str()),
+                dir,
+                kill_grace,
+            )
+            .await;
             return;
         }
     }
@@ -1016,7 +1047,13 @@ async fn run_session(session: Session) {
     let routable = command_names(&command_wire);
     let commands = commands_from_wire(&command_wire);
     if !commands.is_empty() && !send(&event_tx, AgentEvent::AvailableCommands { commands }).await {
-        server.shutdown(kill_grace).await;
+        finish(
+            &mut server,
+            request.ephemeral.then_some(session_id.as_str()),
+            dir,
+            kill_grace,
+        )
+        .await;
         return;
     }
 
@@ -1051,7 +1088,13 @@ async fn run_session(session: Session) {
             )
             .await;
             bus_handle.abort();
-            server.shutdown(kill_grace).await;
+            finish(
+                &mut server,
+                request.ephemeral.then_some(session_id.as_str()),
+                dir,
+                kill_grace,
+            )
+            .await;
             return;
         }};
     }
@@ -1518,7 +1561,13 @@ async fn run_session(session: Session) {
         tracing::debug!(target: "agent_harness::opencode", "run loop ended without settling");
     }
     bus_handle.abort();
-    server.shutdown(kill_grace).await;
+    finish(
+        &mut server,
+        request.ephemeral.then_some(session_id.as_str()),
+        dir,
+        kill_grace,
+    )
+    .await;
 }
 
 fn is_own_idle(event: &Value, session_id: &str) -> bool {

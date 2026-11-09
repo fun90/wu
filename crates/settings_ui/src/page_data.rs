@@ -4530,7 +4530,7 @@ fn window_and_layout_page() -> SettingsPage {
 }
 
 fn panels_page() -> SettingsPage {
-    fn project_panel_section() -> [SettingsPageItem; 29] {
+    fn project_panel_section() -> [SettingsPageItem; 30] {
         [
             SettingsPageItem::SectionHeader(n!("Project Panel")),
             SettingsPageItem::SettingItem(SettingItem {
@@ -5060,6 +5060,24 @@ fn panels_page() -> SettingsPage {
                             .sort_order = value;
                     },
                     json_path: Some("project_panel.sort_order"),
+                }),
+                metadata: None,
+                files: USER,
+            }),
+            SettingsPageItem::SettingItem(SettingItem {
+                title: n!("Open Mode"),
+                description: n!("Whether files open with a single click or a double click."),
+                field: Box::new(SettingField {
+                    json_path: Some("project_panel.open_mode"),
+                    pick: |settings_content| {
+                        settings_content.project_panel.as_ref()?.open_mode.as_ref()
+                    },
+                    write: |settings_content, value, _| {
+                        settings_content
+                            .project_panel
+                            .get_or_insert_default()
+                            .open_mode = value;
+                    },
                 }),
                 metadata: None,
                 files: USER,
@@ -7297,6 +7315,33 @@ fn version_control_page() -> SettingsPage {
         ]
     }
 
+    fn git_graph_section() -> [SettingsPageItem; 2] {
+        [
+            SettingsPageItem::SectionHeader(n!("Git Graph")),
+            SettingsPageItem::SettingItem(SettingItem {
+                title: n!("Date Format"),
+                description: n!("How commit dates are shown in the Git Graph."),
+                field: Box::new(SettingField {
+                    json_path: Some("git.graph_date_format"),
+                    pick: |settings_content| {
+                        settings_content.git.as_ref()?.graph_date_format.as_ref()
+                    },
+                    write: |settings_content, value, _| {
+                        settings_content
+                            .git
+                            .get_or_insert_default()
+                            .graph_date_format = value;
+                    },
+                }),
+                metadata: Some(Box::new(SettingsFieldMetadata {
+                    should_do_titlecase: Some(false),
+                    ..Default::default()
+                })),
+                files: USER,
+            }),
+        ]
+    }
+
     fn git_hunks_section() -> [SettingsPageItem; 5] {
         [
             SettingsPageItem::SectionHeader(n!("Git Hunks")),
@@ -7407,6 +7452,7 @@ fn version_control_page() -> SettingsPage {
             git_gutter_section(),
             inline_git_blame_section(),
             git_blame_view_section(),
+            git_graph_section(),
             branch_picker_section(),
             file_diff_section(),
             git_hunks_section(),
@@ -8004,6 +8050,102 @@ fn agent_chat_page() -> SettingsPage {
         ]
     }
 
+    fn commit_message_section() -> [SettingsPageItem; 4] {
+        [
+            SettingsPageItem::SectionHeader(n!("Commit Messages")),
+            SettingsPageItem::SettingItem(SettingItem {
+                title: n!("Commit Message Agent"),
+                description: n!(
+                    "The agent that writes commit messages in the Git panel. When unset, the first installed agent."
+                ),
+                field: Box::new(SettingField {
+                    json_path: Some("agent_chat.commit_message.agent"),
+                    pick: |settings_content| {
+                        settings_content
+                            .agent_chat
+                            .as_ref()?
+                            .commit_message
+                            .as_ref()?
+                            .agent
+                            .as_ref()
+                    },
+                    write: |settings_content, value, _| {
+                        let commit_message = settings_content
+                            .agent_chat
+                            .get_or_insert_default()
+                            .commit_message
+                            .get_or_insert_default();
+                        if commit_message.agent != value {
+                            commit_message.model = None;
+                        }
+                        commit_message.agent = value;
+                    },
+                }),
+                metadata: Some(Box::new(SettingsFieldMetadata {
+                    should_do_titlecase: Some(false),
+                    ..Default::default()
+                })),
+                files: USER,
+            }),
+            SettingsPageItem::SettingItem(SettingItem {
+                title: n!("Commit Message Model"),
+                description: n!(
+                    "The model that writes commit messages. When unset, a small, fast model."
+                ),
+                field: Box::new(SettingField {
+                    json_path: Some("agent_chat.commit_message.model"),
+                    pick: |settings_content| {
+                        settings_content
+                            .agent_chat
+                            .as_ref()?
+                            .commit_message
+                            .as_ref()?
+                            .model
+                            .as_ref()
+                    },
+                    write: |settings_content, value, _| {
+                        settings_content
+                            .agent_chat
+                            .get_or_insert_default()
+                            .commit_message
+                            .get_or_insert_default()
+                            .model = value;
+                    },
+                }),
+                metadata: None,
+                files: USER,
+            }),
+            SettingsPageItem::SettingItem(SettingItem {
+                title: n!("Commit Message Instructions"),
+                description: n!(
+                    "Extra instructions for commit messages, such as the language or style to use."
+                ),
+                field: Box::new(SettingField {
+                    json_path: Some("agent_chat.commit_message.instructions"),
+                    pick: |settings_content| {
+                        settings_content
+                            .agent_chat
+                            .as_ref()?
+                            .commit_message
+                            .as_ref()?
+                            .instructions
+                            .as_ref()
+                    },
+                    write: |settings_content, value, _| {
+                        settings_content
+                            .agent_chat
+                            .get_or_insert_default()
+                            .commit_message
+                            .get_or_insert_default()
+                            .instructions = value;
+                    },
+                }),
+                metadata: None,
+                files: USER,
+            }),
+        ]
+    }
+
     SettingsPage {
         title: AGENT_CHAT_PAGE,
         items: concat_sections![
@@ -8012,6 +8154,7 @@ fn agent_chat_page() -> SettingsPage {
             new_chats_section(),
             agents_section(),
             context_section(),
+            commit_message_section(),
             notifications_section()
         ],
     }
